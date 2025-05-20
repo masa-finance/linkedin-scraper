@@ -135,6 +135,46 @@ The following example demonstrates how to search for profiles. It expects your L
 
 This will search for profiles matching "software engineer", attempt to load credentials from `.env` or environment variables, and print the found profiles as JSON.
 
+## Echo API Example
+
+This project includes a more advanced example demonstrating how to use the `linkedinscraper` package within a web API built with the [Echo framework](https://echo.labstack.com/).
+
+The example API is located in `examples/echo_api_example/`.
+
+### Running the Echo API Example
+
+1.  **Set up your credentials for the example:**
+    *   Navigate to the example directory:
+        ```bash
+        cd examples/echo_api_example
+        ```
+    *   Create a `.env` file in this directory by copying the main project's `.env.example` or creating a new one:
+        ```env
+        # examples/echo_api_example/.env
+        LI_AT_COOKIE="YOUR_LI_AT_COOKIE_VALUE"
+        CSRF_TOKEN="YOUR_CSRF_TOKEN_VALUE"
+        JSESSIONID_TOKEN="ajax:YOUR_JSESSIONID_VALUE"
+        ```
+    *   Replace the placeholder values with your actual LinkedIn credentials.
+
+2.  **Run the API server:**
+    *   Ensure you are in the `examples/echo_api_example` directory.
+    *   Execute the following command:
+        ```bash
+        go run main.go
+        ```
+    *   The server will start, typically on port `1323`. You should see log output indicating it's running.
+
+3.  **Test the API:**
+    *   Once the server is running, you can query the `/search/linkedin` endpoint using a tool like `curl` or your web browser.
+    *   Example using `curl` (from a new terminal window):
+        ```bash
+        curl "http://localhost:1323/search/linkedin?keywords=golang+developer"
+        ```
+    *   This will send a request to the API to search for LinkedIn profiles matching "golang developer" and return the results as JSON. The example is configured to return up to 5 profiles.
+
+This Echo example demonstrates how to integrate the scraper into a service that can be called over HTTP.
+
 ## Contributing
 
 (Details to be added later - e.g., how to run tests, coding standards, etc.)
