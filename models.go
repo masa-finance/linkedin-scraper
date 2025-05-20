@@ -8,6 +8,8 @@ type ProfileSearchArgs struct {
 	Count          int // Added based on typical pagination and cURL example
 	// Add other potential search parameters here if identified.
 	// Origin string // e.g., "FACETED_SEARCH", also a potential parameter
+	XLiPageInstance string // Optional: To override default placeholder
+	XLiTrack        string // Optional: To override default placeholder
 }
 
 // LinkedInProfile represents the extracted information for a single LinkedIn profile.

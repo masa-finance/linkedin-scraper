@@ -1,13 +1,14 @@
 package linkedinscraper
 
 import (
+	"compress/gzip"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -30,35 +31,99 @@ func NewClient(cfg *Config) (*Client, error) {
 	return &Client{httpClient: httpClient, config: cfg}, nil
 }
 
-// buildGraphQLURL constructs the GraphQL request URL.
-func buildGraphQLURL(baseURL string, queryID string, variables SearchVariables) (string, error) {
-	variablesJSON, err := json.Marshal(variables)
+// buildGraphQLURL constructs the full URL for a GraphQL API request.
+// It takes the base URL, query ID, and variables, then assembles them.
+func buildGraphQLURL(baseURL, queryID string, variables SearchVariables) (string, error) {
+	parsedBaseURL, err := url.Parse(baseURL)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal search variables: %w", err)
+		return "", fmt.Errorf("failed to parse base URL: %w", err)
 	}
 
-	encodedVariables := url.QueryEscape(string(variablesJSON))
+	// Manually construct the variables string to match the cURL format
+	// (start:0,count:1,origin:FACETED_SEARCH,query:(keywords:investor,flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:network,value:List(F,O)),(key:resultType,value:List(PEOPLE))),includeFiltersInResponse:false))
+	var queryParams []string
+	for _, p := range variables.Query.QueryParameters {
+		// Assuming p.Value is always a list of strings for now.
+		// The cURL shows List(F,O) or List(PEOPLE). We need to join them with commas.
+		valueList := "List(" + stringSliceToString(p.Value, ",") + ")"
+		queryParams = append(queryParams, fmt.Sprintf("(key:%s,value:%s)", p.Key, valueList))
+	}
+	queryParametersString := "List(" + stringSliceToString(queryParams, ",") + ")"
 
-	// Construct the full URL: baseURL + "?includeWebMetadata=true&variables=(" + encodedVariables + ")&queryId=" + queryID
-	// Using fmt.Sprintf for clarity
-	return fmt.Sprintf("%s?includeWebMetadata=true&variables=(%s)&queryId=%s", baseURL, encodedVariables, queryID), nil
+	// Ensure keywords are properly escaped for the URL query string part, but not for the graphql variable part
+	// The variable string itself is a single query parameter value, so special characters within it are fine.
+	// However, if keywords themselves contain characters like '(', ')', ',', they should be as-is per cURL.
+
+	// Reverted: Use full variablesString including queryParameters
+	variablesString := fmt.Sprintf("(start:%d,count:%d,origin:%s,query:(keywords:%s,flagshipSearchIntent:%s,queryParameters:%s,includeFiltersInResponse:%t))",
+		variables.Start,
+		variables.Count,
+		variables.Origin,
+		variables.Query.Keywords, // Keywords here should NOT be URL encoded yet.
+		variables.Query.FlagshipSearchIntent,
+		queryParametersString, // Reverted: Include queryParametersString
+		variables.Query.IncludeFiltersInResponse,
+	)
+
+	query := parsedBaseURL.Query()
+	query.Set("queryId", queryID)
+	// query.Set("variables", variablesString) // Old way
+	query.Set("includeWebMetadata", "true")
+	// parsedBaseURL.RawQuery = query.Encode() // Old way: Encodes the whole variablesString including its parentheses
+
+	// New way: Encode queryId and includeWebMetadata, then append raw variables string
+	// This is to prevent URL-encoding of parentheses within the variablesString itself.
+	// The cURL seems to pass variables=(...) with literal parentheses.
+	encodedBaseQuery := query.Encode() // This will have queryId and includeWebMetadata encoded
+
+	// Now, append the variables part more directly.
+	// The variablesString itself should not be additionally URL-encoded if it's meant to be like the cURL.
+	// However, the overall query string still needs to be valid.
+	// The key "variables" is fine. The value is our variablesString.
+	// If query.Encode() was too aggressive, we construct it piece by piece.
+
+	// Ensure variablesString itself has its necessary internal components, but its surrounding parens are literal in the final URL.
+	// This means we are treating the whole `(start:0,...false)` as a single value for the `variables` key.
+	// The `url.QueryEscape` should be used for the value if it contains special chars that break URL structure (like `&`, `=`, `?`)
+	// BUT, the cURL has `&variables=(...)&` - the `=` and `&` are delimiters. The `(...)` is the value.
+	// The log showed `variables=%28start...%29`, meaning `query.Encode()` did encode the parens.
+	// If the cURL implies those parens should NOT be encoded, then we need to add it raw.
+
+	finalQueryString := encodedBaseQuery + "&variables=" + variablesString // Append raw variables string
+	parsedBaseURL.RawQuery = finalQueryString
+
+	return parsedBaseURL.String(), nil
 }
 
-// makeRequest executes an HTTP request.
+// stringSliceToString joins a slice of strings with a separator.
+// Helper function for constructing parts of the variables string.
+func stringSliceToString(slice []string, sep string) string {
+	return strings.Join(slice, sep)
+}
+
+// makeRequest executes an HTTP request and returns the response and body bytes.
+// It handles adding common headers like CSRF token and li_at cookie.
 func (c *Client) makeRequest(ctx context.Context, method string, urlStr string, headers http.Header, body io.Reader) (*http.Response, []byte, error) {
+	// log.Printf("[DEBUG] makeRequest: URL: %s", urlStr) // Log the request URL - REMOVED
 	req, err := http.NewRequestWithContext(ctx, method, urlStr, body)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Set common headers from constants and config
-	req.Header.Set("Accept", AcceptHeaderValue)
-	req.Header.Set("Accept-Encoding", AcceptEncodingHeaderValue)
-	req.Header.Set("Accept-Language", AcceptLanguageHeaderValue)
+	// Set standard headers that are often required or good to have.
+	// The Content-Type for GET requests with GraphQL variables in query params is typically not needed,
+	// but if we were sending a POST with a JSON body, it would be "application/json".
+	// req.Header.Set("Content-Type", "application/json") // Not for GET
+
+	// Set User-Agent to match the cURL
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36")
+	req.Header.Set("Accept-Language", "en-GB,en-US;q=0.9,en;q=0.8")
+	req.Header.Set("Accept-Encoding", "gzip, deflate, br, zstd")
+	req.Header.Set("X-Li-Lang", "en_US")
+	req.Header.Set("X-Restli-Protocol-Version", "2.0.0")
+
+	// Add CSRF token and li_at cookie
 	req.Header.Set("Csrf-Token", c.config.Auth.CSRFToken)
-	req.Header.Set("X-Li-Lang", DefaultLiLangHeaderValue)
-	req.Header.Set("X-Restli-Protocol-Version", DefaultRestliProtocolVersion)
-	req.Header.Set("User-Agent", c.config.UserAgent)
 	req.Header.Set("Cookie", fmt.Sprintf("li_at=%s; JSESSIONID=\"%s\"", c.config.Auth.LiAtCookie, c.config.Auth.JSESSIONID))
 
 	// Add any other headers passed in the headers argument
@@ -74,7 +139,18 @@ func (c *Client) makeRequest(ctx context.Context, method string, urlStr string, 
 	}
 	defer resp.Body.Close()
 
-	respBodyBytes, err := io.ReadAll(resp.Body)
+	var reader io.Reader = resp.Body
+	// Check if the server sent gzipped content, even if Go's client is supposed to handle it.
+	if resp.Header.Get("Content-Encoding") == "gzip" {
+		gzipReader, err := gzip.NewReader(resp.Body)
+		if err != nil {
+			return resp, nil, fmt.Errorf("failed to create gzip reader for response body: %w", err)
+		}
+		defer gzipReader.Close()
+		reader = gzipReader
+	}
+
+	respBodyBytes, err := io.ReadAll(reader) // Read from the (potentially decompressed) reader
 	if err != nil {
 		return resp, nil, fmt.Errorf("failed to read response body: %w", err)
 	}

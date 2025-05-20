@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 // SearchProfiles searches for LinkedIn profiles based on the provided arguments.
@@ -40,6 +41,7 @@ func (c *Client) SearchProfiles(ctx context.Context, args ProfileSearchArgs) ([]
 
 	variables := SearchVariables{
 		Start:  args.Start,
+		Count:  args.Count,       // Populate Count from args
 		Origin: "FACETED_SEARCH", // from cURL
 		Query:  querySubQuery,
 	}
@@ -52,14 +54,41 @@ func (c *Client) SearchProfiles(ctx context.Context, args ProfileSearchArgs) ([]
 
 	// Prepare Headers
 	customHeaders := http.Header{}
-	// Example Referer, needs to be more robust or configurable
-	customHeaders.Set("Referer", "https://www.linkedin.com/search/results/people/?keywords="+url.QueryEscape(args.Keywords))
-	// X-Li-Page-Instance and X-Li-Track are complex and might need dynamic generation or configuration.
-	// For now, using placeholders or values that might be common/static enough for initial testing.
-	customHeaders.Set("X-Li-Page-Instance", "urn:li:page:d_flagship3_search_srp_people;placeholder") // Placeholder
+	customHeaders.Set("Accept", "application/vnd.linkedin.normalized+json+2.1") // Ensure correct Accept header from cURL
+
+	// Construct Referer URL
+	// The cURL Referer is: https://www.linkedin.com/search/results/people/?keywords=investor&network=["F","O"]&origin=FACETED_SEARCH
+	// Note: network parameter is a literal JSON array string, not URL encoded components.
+	var refererQueryParts []string
+	refererQueryParts = append(refererQueryParts, "keywords="+url.QueryEscape(args.Keywords))
+
+	if len(args.NetworkFilters) > 0 {
+		// Create the literal JSON array string for the network filter
+		networkFilterString := "[\"" + strings.Join(args.NetworkFilters, "\",\"") + "\"]"
+		refererQueryParts = append(refererQueryParts, "network="+networkFilterString) // Do not QueryEscape the already formatted JSON string
+	}
+	refererQueryParts = append(refererQueryParts, "origin=FACETED_SEARCH")
+
+	baseURLForReferer := "https://www.linkedin.com/search/results/people/"
+	fullRefererURL := baseURLForReferer + "?" + strings.Join(refererQueryParts, "&")
+	customHeaders.Set("Referer", fullRefererURL)
+
+	// Use XLiPageInstance from args if provided, otherwise use placeholder
+	xLiPageInstance := "urn:li:page:d_flagship3_search_srp_people;placeholder" // Default placeholder
+	if args.XLiPageInstance != "" {
+		xLiPageInstance = args.XLiPageInstance
+	}
+	customHeaders.Set("X-Li-Page-Instance", xLiPageInstance)
+
 	customHeaders.Set("X-Li-Pem-Metadata", "Voyager - People SRP=search-results")
-	// A simplified or static X-Li-Track. This is highly likely to need adjustment.
-	customHeaders.Set("X-Li-Track", `{"clientVersion":"1.13.x","mpVersion":"1.13.x","pageKey":"p_flagship3_search_srp_people","traceId":"placeholderTraceId"}`)
+
+	// Use XLiTrack from args if provided, otherwise use placeholder matching cURL structure
+	// cURL: {"clientVersion":"1.13.35368","mpVersion":"1.13.35368","osName":"web","timezoneOffset":-7,"timezone":"America/Los_Angeles","deviceFormFactor":"DESKTOP","mpName":"voyager-web","displayDensity":2,"displayWidth":5120,"displayHeight":2880}
+	xLiTrack := `{"clientVersion":"1.13.35368","mpVersion":"1.13.35368","osName":"web","timezoneOffset":-7,"timezone":"America/Los_Angeles","deviceFormFactor":"DESKTOP","mpName":"voyager-web","displayDensity":2,"displayWidth":1920,"displayHeight":1080}` // Default placeholder, using common display W/H
+	if args.XLiTrack != "" {
+		xLiTrack = args.XLiTrack
+	}
+	customHeaders.Set("X-Li-Track", xLiTrack)
 
 	// Make API Call
 	resp, respBodyBytes, err := c.makeRequest(ctx, http.MethodGet, requestURL, customHeaders, nil)
