@@ -79,14 +79,18 @@ func searchLinkedInProfilesHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, SimpleMessage{Message: "Failed to initialize LinkedIn client: " + err.Error()})
 	}
 
+	// Call the scraper
 	searchArgs := linkedinscraper.ProfileSearchArgs{
-		Keywords: keywords,
-		Count:    5, // Default to 5 results for this example, make configurable if needed
-		Start:    0,
-		// NetworkFilters, XLiTrack, XLiPageInstance are omitted to rely on package defaults or if not strictly needed
+		Keywords:       keywords,
+		Count:          5, // Default to 5 results for the example
+		Start:          0,
+		NetworkFilters: []string{"F", "O"}, // Add default network filters
+		// Use the same XLiPageInstance and XLiTrack as the working integration test
+		XLiPageInstance: "urn:li:page:d_flagship3_search_srp_people;e+uzo8jcR7GbUNfmjxNoSw==",
+		XLiTrack:        `{"clientVersion":"1.13.35368","mpVersion":"1.13.35368","osName":"web","timezoneOffset":-7,"timezone":"America/Los_Angeles","deviceFormFactor":"DESKTOP","mpName":"voyager-web","displayDensity":2,"displayWidth":5120,"displayHeight":2880}`,
 	}
 
-	log.Printf("Searching LinkedIn for keywords: %s", keywords)
+	log.Printf("Searching LinkedIn for keywords: %s with network filters: %v, XLiPageInstance: %s, XLiTrack: %s", keywords, searchArgs.NetworkFilters, searchArgs.XLiPageInstance, searchArgs.XLiTrack)
 	profiles, err := client.SearchProfiles(context.Background(), searchArgs)
 	if err != nil {
 		log.Printf("Error from SearchProfiles: %v", err)

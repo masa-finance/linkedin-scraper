@@ -59,7 +59,7 @@ func buildGraphQLURL(baseURL, queryID string, variables SearchVariables) (string
 		variables.Start,
 		variables.Count,
 		variables.Origin,
-		variables.Query.Keywords, // Keywords here should NOT be URL encoded yet.
+		url.QueryEscape(variables.Query.Keywords), // URL Encode the keywords string for spaces etc.
 		variables.Query.FlagshipSearchIntent,
 		queryParametersString, // Reverted: Include queryParametersString
 		variables.Query.IncludeFiltersInResponse,
@@ -104,7 +104,7 @@ func stringSliceToString(slice []string, sep string) string {
 // makeRequest executes an HTTP request and returns the response and body bytes.
 // It handles adding common headers like CSRF token and li_at cookie.
 func (c *Client) makeRequest(ctx context.Context, method string, urlStr string, headers http.Header, body io.Reader) (*http.Response, []byte, error) {
-	// log.Printf("[DEBUG] makeRequest: URL: %s", urlStr) // Log the request URL - REMOVED
+	// log.Printf("[DEBUG] makeRequest (from Echo example context): URL: %s", urlStr) // TEMPORARY LOGGING - REMOVED
 	req, err := http.NewRequestWithContext(ctx, method, urlStr, body)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create request: %w", err)
@@ -132,6 +132,14 @@ func (c *Client) makeRequest(ctx context.Context, method string, urlStr string, 
 			req.Header.Add(key, value)
 		}
 	}
+
+	// Log all request headers before sending
+	// log.Println("[DEBUG] makeRequest: All Request Headers:") // TEMPORARY LOGGING - REMOVED
+	// for name, headers := range req.Header { // TEMPORARY LOGGING - REMOVED
+	// 	for _, h := range headers { // TEMPORARY LOGGING - REMOVED
+	// 		log.Printf("[DEBUG] makeRequest Header: %v: %v", name, h) // TEMPORARY LOGGING - REMOVED
+	// 	} // TEMPORARY LOGGING - REMOVED
+	// } // TEMPORARY LOGGING - REMOVED
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
