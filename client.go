@@ -187,56 +187,11 @@ func (c *Client) GetProfile(ctx context.Context, publicIdentifier string) (*Link
 		return nil, fmt.Errorf("%w: %v. Raw response: %s", ErrResponseParseFailed, err, string(respBodyBytes))
 	}
 
-	// Extract Profile from Response
-	profile, err := c.extractProfileFromResponse(&apiResponse, publicIdentifier)
+	// Extract Profile from Response using comprehensive parsing
+	profile, err := convertAPIResponseToLinkedInProfile(&apiResponse, publicIdentifier)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract profile from response: %w", err)
 	}
-
-	return profile, nil
-}
-
-// extractProfileFromResponse extracts a LinkedInProfile from the ProfileAPIResponse.
-func (c *Client) extractProfileFromResponse(apiResponse *ProfileAPIResponse, publicIdentifier string) (*LinkedInProfile, error) {
-	// Find the main profile entity in the included array
-	var profileEntity *ProfileResponseEntity
-
-	for _, item := range apiResponse.Included {
-		if item.Type == "com.linkedin.voyager.dash.identity.profile.Profile" {
-			// Convert GenericIncludedElement to ProfileResponseEntity
-			// This is a simplified conversion - in production, you'd want more robust type handling
-			if item.PublicIdentifier == publicIdentifier {
-				profileEntity = &ProfileResponseEntity{
-					EntityURN:        item.EntityURN,
-					FirstName:        item.FirstName,
-					LastName:         item.LastName,
-					Headline:         item.Headline,
-					PublicIdentifier: item.PublicIdentifier,
-					// Note: Other fields would need to be extracted from the raw JSON
-					// For now, we'll populate what's available in GenericIncludedElement
-				}
-				break
-			}
-		}
-	}
-
-	if profileEntity == nil {
-		return nil, fmt.Errorf("profile not found in API response")
-	}
-
-	// Convert ProfileResponseEntity to LinkedInProfile
-	profile := &LinkedInProfile{
-		PublicIdentifier: profileEntity.PublicIdentifier,
-		URN:              profileEntity.EntityURN,
-		FirstName:        profileEntity.FirstName,
-		LastName:         profileEntity.LastName,
-		FullName:         profileEntity.FirstName + " " + profileEntity.LastName,
-		Headline:         profileEntity.Headline,
-		ProfileURL:       fmt.Sprintf("https://www.linkedin.com/in/%s/", publicIdentifier),
-	}
-
-	// TODO: In the next step, we'll implement more comprehensive parsing
-	// to extract all the additional fields like experience, education, etc.
 
 	return profile, nil
 }
