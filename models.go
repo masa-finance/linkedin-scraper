@@ -12,14 +12,128 @@ type ProfileSearchArgs struct {
 	XLiTrack        string // Optional: To override default placeholder
 }
 
+// Date represents a LinkedIn date structure
+type Date struct {
+	Year  int `json:"year,omitempty"`
+	Month int `json:"month,omitempty"`
+	Day   int `json:"day,omitempty"`
+}
+
+// DateRange represents a LinkedIn date range
+type DateRange struct {
+	Start *Date `json:"start,omitempty"`
+	End   *Date `json:"end,omitempty"`
+}
+
+// Experience represents a work experience/position entry
+type Experience struct {
+	EntityURN              string              `json:"entityUrn,omitempty"`
+	CompanyName            string              `json:"companyName,omitempty"`
+	CompanyURN             string              `json:"companyUrn,omitempty"`
+	Title                  string              `json:"title,omitempty"`
+	Description            string              `json:"description,omitempty"`
+	DateRange              *DateRange          `json:"dateRange,omitempty"`
+	LocationName           string              `json:"locationName,omitempty"`
+	MultiLocaleCompanyName []map[string]string `json:"multiLocaleCompanyName,omitempty"`
+}
+
+// Education represents an education entry
+type Education struct {
+	EntityURN    string     `json:"entityUrn,omitempty"`
+	SchoolName   string     `json:"schoolName,omitempty"`
+	SchoolURN    string     `json:"schoolUrn,omitempty"`
+	DegreeName   string     `json:"degreeName,omitempty"`
+	FieldOfStudy string     `json:"fieldOfStudy,omitempty"`
+	DateRange    *DateRange `json:"dateRange,omitempty"`
+	Description  string     `json:"description,omitempty"`
+	Activities   string     `json:"activities,omitempty"`
+}
+
+// Skill represents a skill entry
+type Skill struct {
+	EntityURN        string `json:"entityUrn,omitempty"`
+	Name             string `json:"name,omitempty"`
+	EndorsementCount int    `json:"endorsementCount,omitempty"`
+	EndorsedByViewer bool   `json:"endorsedByViewer,omitempty"`
+}
+
+// Certification represents a certification entry
+type Certification struct {
+	EntityURN     string     `json:"entityUrn,omitempty"`
+	Name          string     `json:"name,omitempty"`
+	Authority     string     `json:"authority,omitempty"`
+	DateRange     *DateRange `json:"dateRange,omitempty"`
+	LicenseNumber string     `json:"licenseNumber,omitempty"`
+	URL           string     `json:"url,omitempty"`
+}
+
+// ProfileLocation represents detailed location information
+type ProfileLocation struct {
+	CountryCode       string `json:"countryCode,omitempty"`
+	PostalCode        string `json:"postalCode,omitempty"`
+	PreferredGeoPlace string `json:"preferredGeoPlace,omitempty"`
+}
+
+// ProfilePicture represents profile picture information
+type ProfilePicture struct {
+	DisplayImageUrn    string `json:"displayImageUrn,omitempty"`
+	PhotoFilterPicture string `json:"photoFilterPicture,omitempty"`
+	RootURL            string `json:"rootUrl,omitempty"`
+	A11yText           string `json:"a11yText,omitempty"`
+}
+
+// ConnectionInfo represents connection and following information
+type ConnectionInfo struct {
+	ConnectionCount int  `json:"connectionCount,omitempty"`
+	FollowerCount   int  `json:"followerCount,omitempty"`
+	FollowingCount  int  `json:"followingCount,omitempty"`
+	Following       bool `json:"following,omitempty"`
+}
+
 // LinkedInProfile represents the extracted information for a single LinkedIn profile.
+// Extended to support both search results and detailed profile data.
 type LinkedInProfile struct {
+	// Basic fields (existing - for backward compatibility)
 	PublicIdentifier string `json:"publicIdentifier,omitempty"` // e.g., "nic-sanchez-a8516a54"
 	URN              string `json:"urn,omitempty"`              // e.g., "urn:li:fsd_profile:ACoAAAtp-4UBpQ0aZ_PeToflBoLty9BpO_CQ6-I"
 	FullName         string `json:"fullName,omitempty"`         // e.g., "Nic Sanchez"
 	Headline         string `json:"headline,omitempty"`         // e.g., "Investor at Bertram Capital"
 	Location         string `json:"location,omitempty"`         // e.g., "San Francisco, CA"
 	ProfileURL       string `json:"profileUrl,omitempty"`       // e.g., "https://www.linkedin.com/in/nic-sanchez-a8516a54?..."
+
+	// Extended fields for detailed profile data
+	FirstName string `json:"firstName,omitempty"`
+	LastName  string `json:"lastName,omitempty"`
+	Summary   string `json:"summary,omitempty"`
+	Industry  string `json:"industry,omitempty"`
+
+	// Location details
+	LocationDetails *ProfileLocation `json:"locationDetails,omitempty"`
+
+	// Professional information
+	Experience     []Experience    `json:"experience,omitempty"`
+	Education      []Education     `json:"education,omitempty"`
+	Skills         []Skill         `json:"skills,omitempty"`
+	Certifications []Certification `json:"certifications,omitempty"`
+
+	// Profile media and presentation
+	ProfilePicture     *ProfilePicture `json:"profilePicture,omitempty"`
+	BackgroundImageURL string          `json:"backgroundImageUrl,omitempty"`
+
+	// Social and verification info
+	ConnectionInfo *ConnectionInfo `json:"connectionInfo,omitempty"`
+	IsVerified     bool            `json:"isVerified,omitempty"`
+	IsCreator      bool            `json:"isCreator,omitempty"`
+	IsPremium      bool            `json:"isPremium,omitempty"`
+
+	// Additional metadata
+	IsMemorialized  bool   `json:"isMemorialized,omitempty"`
+	TempStatus      string `json:"tempStatus,omitempty"`
+	TempStatusEmoji string `json:"tempStatusEmoji,omitempty"`
+
+	// Activity and engagement
+	CreatorWebsite string `json:"creatorWebsite,omitempty"`
+
 	// Degree string `json:"degree,omitempty"` // e.g. "• 2nd", could be parsed from badgeText
 }
 
