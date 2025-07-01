@@ -108,9 +108,11 @@ The following example demonstrates how to search for profiles. It expects your L
     	fmt.Println("Searching for profiles with keyword 'software engineer'...")
     	searchArgs := linkedinscraper.ProfileSearchArgs{
     		Keywords:       "software engineer",
-    		NetworkFilters: []string{"S"}, 
-    		Start:          0,            
-    		Count:          5,             
+    		// NetworkFilters is optional. LinkedIn's default is to search all network degrees.
+    		// Valid filters: "F" (1st degree), "S" (2nd degree), "O" (Outside of Your Network).
+    		NetworkFilters: []string{"S"},
+    		Start:          0,
+    		Count:          5,
     	}
 
     	profiles, err := client.SearchProfiles(context.Background(), searchArgs)
