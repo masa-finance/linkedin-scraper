@@ -1,0 +1,119 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# LinkedIn Full Profile Fetching - SDK Extension
+
+## Overview
+Extend the existing LinkedIn scraper SDK to add comprehensive profile fetching alongside search functionality. Build on current client architecture while maintaining backward compatibility.
+
+## ⚠️ CRITICAL REQUIREMENTS
+- **PRESERVE existing functionality** - search must continue working identically
+- **LEAN V1 approach** - core profile data first, advanced features later
+- **NO breaking changes** - maintain all existing interfaces
+- **DETAILED COMMITS** - commit each step with descriptive messages
+
+## Implementation Steps
+
+### Phase 1: Core Profile Models
+
+#### Step 1.1: Extend Profile Models
+**Objective**: Add comprehensive profile data structures
+**Files**: `models.go`
+**Action**: 
+- Use existing `LinkedInProfile` struct and update with additional fields from profile.json
+- Include experience, education, skills, certifications
+- Add location details, contact info, summary
+- Keep existing backwards compatability with the search endpoint with the updated `LinkedInProfile` 
+**Verification**: Run `go build` successfully
+**Commit**:
+
+#### Step 1.2: Add Profile Response Types  
+**Objective**: Create response parsing structures
+**Files**: `models.go`
+**Action**:
+- Add `ProfileResponse` struct for API response parsing
+- Add helper structs for nested data (Experience, Education, etc.)
+- Add JSON tags matching LinkedIn's API structure
+**Verification**: Structs compile without errors
+**Commit**:
+
+### Phase 2: Profile Client Methods
+
+#### Step 2.1: Add Profile Fetching Method
+**Objective**: Implement core profile fetching functionality
+**Files**: `client.go`, `linkedinscraper.go`
+**Action**:
+- Add `GetProfile(publicIdentifier string) (*LinkedInProfile, error)` method
+- Implement GraphQL request with voyagerIdentityDashProfiles query
+- Add proper URL construction and headers
+- Handle authentication and cookies
+**Verification**: Method compiles and can be called
+**Commit**: 
+
+#### Step 2.2: Add Profile Parsing Logic
+**Objective**: Parse LinkedIn API response to Go structs
+**Files**: Create `profile.go`
+**Action**:
+- Add response parsing functions
+- Handle nested JSON structures (experience, education)
+- Add error handling for malformed responses
+- Add data validation and sanitization
+**Verification**: Parse sample profile.json successfully
+**Commit**: 
+
+### Phase 3: Integration & Testing
+
+#### Step 3.1: Add Example Usage
+**Objective**: Demonstrate profile fetching functionality
+**Files**: `examples/get_profile/main.go`
+**Action**:
+- Create example showing profile fetching
+- Add error handling and output formatting
+- Show integration with existing search
+- Add usage documentation
+**Verification**: Example runs and fetches profile data
+**Commit**: 
+
+#### Step 3.2: Add Integration Test
+**Objective**: Ensure profile fetching works end-to-end
+**Files**: `profile_integration_test.go`
+**Action**:
+- Add test for profile fetching
+- Test with real LinkedIn public identifier
+- Validate returned data structure
+- Add error case testing
+**Verification**: Tests pass with real API calls
+**Commit**: 
+
+### Phase 4: Documentation & Cleanup
+
+#### Step 4.1: Update Documentation
+**Objective**: Document new profile fetching capabilities
+**Files**: `README.md`
+**Action**:
+- Add GetProfile method documentation
+- Include usage examples and code samples
+- Document available profile fields
+- Add best practices and rate limiting notes
+**Verification**: Documentation is clear and complete
+**Commit**: 
+
+#### Step 4.2: Final Integration
+**Objective**: Ensure everything works together
+**Files**: Run full test suite
+**Action**:
+- Run all existing tests to ensure no regressions
+- Test both search and profile functionality
+- Verify examples work correctly
+- Clean up any unused imports or code
+**Verification**: All tests pass, no breaking changes
+**Commit**:
+
+## Success Criteria
+- ✅ Existing search functionality unchanged
+- ✅ New GetProfile method returns rich profile data
+- ✅ Examples demonstrate both search and profile fetching
+- ✅ All tests pass
+- ✅ Documentation updated 
