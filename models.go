@@ -286,3 +286,213 @@ type SearchAPIResponse struct {
 	// Meta interface{} `json:"meta"` // The meta field contains microSchema, can be added if needed
 	// Extensions interface{} `json:"extensions"` // The extensions field, can be added if needed
 }
+
+// --- Profile API Response Structures ---
+
+// ProfileAPIResponse represents the top-level response from LinkedIn's profile API
+type ProfileAPIResponse struct {
+	Data     ProfileData              `json:"data"`
+	Included []GenericIncludedElement `json:"included,omitempty"`
+	Meta     interface{}              `json:"meta,omitempty"`
+}
+
+// ProfileData represents the data section of the profile API response
+type ProfileData struct {
+	Data ProfileInnerData `json:"data"`
+}
+
+// ProfileInnerData represents the inner data structure with profile collections
+type ProfileInnerData struct {
+	RecipeTypes                          []string                       `json:"$recipeTypes,omitempty"`
+	IdentityDashProfilesByMemberIdentity IdentityDashProfilesCollection `json:"identityDashProfilesByMemberIdentity"`
+	Type                                 string                         `json:"$type,omitempty"`
+}
+
+// IdentityDashProfilesCollection represents the profile collection response
+type IdentityDashProfilesCollection struct {
+	Elements    []string `json:"*elements,omitempty"`
+	RecipeTypes []string `json:"$recipeTypes,omitempty"`
+	Type        string   `json:"$type,omitempty"`
+}
+
+// ProfileResponseEntity represents a detailed profile entity from the included array
+type ProfileResponseEntity struct {
+	EntityURN           string                    `json:"entityUrn,omitempty"`
+	FirstName           string                    `json:"firstName,omitempty"`
+	LastName            string                    `json:"lastName,omitempty"`
+	Headline            string                    `json:"headline,omitempty"`
+	PublicIdentifier    string                    `json:"publicIdentifier,omitempty"`
+	Location            *ProfileLocationResponse  `json:"location,omitempty"`
+	ProfilePicture      *ProfilePictureResponse   `json:"profilePicture,omitempty"`
+	ConnectionInfo      *ConnectionInfoResponse   `json:"connections,omitempty"`
+	FollowingState      *FollowingStateResponse   `json:"followingState,omitempty"`
+	ProfileTopPosition  *PositionsCollection      `json:"profileTopPosition,omitempty"`
+	ProfileTopEducation *EducationCollection      `json:"profileTopEducation,omitempty"`
+	VerificationData    *VerificationDataResponse `json:"verificationData,omitempty"`
+	Creator             bool                      `json:"creator,omitempty"`
+	CreatorInfo         *CreatorInfoResponse      `json:"creatorInfo,omitempty"`
+	Memorialized        bool                      `json:"memorialized,omitempty"`
+	TempStatus          string                    `json:"tempStatus,omitempty"`
+	TempStatusEmoji     string                    `json:"tempStatusEmoji,omitempty"`
+	CreatorWebsite      *TextViewModelResponse    `json:"creatorWebsite,omitempty"`
+	RecipeTypes         []string                  `json:"$recipeTypes,omitempty"`
+	Type                string                    `json:"$type,omitempty"`
+}
+
+// ProfileLocationResponse represents location data from API response
+type ProfileLocationResponse struct {
+	CountryCode       string   `json:"countryCode,omitempty"`
+	PostalCode        string   `json:"postalCode,omitempty"`
+	PreferredGeoPlace string   `json:"preferredGeoPlace,omitempty"`
+	RecipeTypes       []string `json:"$recipeTypes,omitempty"`
+	Type              string   `json:"$type,omitempty"`
+}
+
+// ProfilePictureResponse represents profile picture data from API response
+type ProfilePictureResponse struct {
+	DisplayImageUrn                string               `json:"displayImageUrn,omitempty"`
+	DisplayImageReference          *VectorImageResponse `json:"displayImageReference,omitempty"`
+	DisplayImageWithFrameReference *VectorImageResponse `json:"displayImageWithFrameReference,omitempty"`
+	A11yText                       string               `json:"a11yText,omitempty"`
+	FrameType                      string               `json:"frameType,omitempty"`
+	IsGeneratedOrModifiedByAi      bool                 `json:"isGeneratedOrModifiedByAi,omitempty"`
+	RecipeTypes                    []string             `json:"$recipeTypes,omitempty"`
+	Type                           string               `json:"$type,omitempty"`
+}
+
+// VectorImageResponse represents vector image data from API response
+type VectorImageResponse struct {
+	RootURL           string                   `json:"rootUrl,omitempty"`
+	Artifacts         []VectorArtifactResponse `json:"artifacts,omitempty"`
+	DigitalMediaAsset string                   `json:"digitalmediaAsset,omitempty"`
+	Attribution       string                   `json:"attribution,omitempty"`
+	RecipeTypes       []string                 `json:"$recipeTypes,omitempty"`
+	Type              string                   `json:"$type,omitempty"`
+}
+
+// VectorArtifactResponse represents individual image artifacts
+type VectorArtifactResponse struct {
+	Width                         int      `json:"width,omitempty"`
+	Height                        int      `json:"height,omitempty"`
+	FileIdentifyingUrlPathSegment string   `json:"fileIdentifyingUrlPathSegment,omitempty"`
+	ExpiresAt                     int64    `json:"expiresAt,omitempty"`
+	RecipeTypes                   []string `json:"$recipeTypes,omitempty"`
+	Type                          string   `json:"$type,omitempty"`
+}
+
+// ConnectionInfoResponse represents connection data from API response
+type ConnectionInfoResponse struct {
+	Paging      *PagingInfoResponse `json:"paging,omitempty"`
+	Elements    []string            `json:"*elements,omitempty"`
+	RecipeTypes []string            `json:"$recipeTypes,omitempty"`
+	Type        string              `json:"$type,omitempty"`
+}
+
+// PagingInfoResponse represents pagination information
+type PagingInfoResponse struct {
+	Start       int      `json:"start,omitempty"`
+	Count       int      `json:"count,omitempty"`
+	Total       int      `json:"total,omitempty"`
+	RecipeTypes []string `json:"$recipeTypes,omitempty"`
+	Type        string   `json:"$type,omitempty"`
+}
+
+// FollowingStateResponse represents following state data
+type FollowingStateResponse struct {
+	EntityURN     string   `json:"entityUrn,omitempty"`
+	Following     bool     `json:"following,omitempty"`
+	FollowerCount int64    `json:"followerCount,omitempty"`
+	FolloweeCount int64    `json:"followeeCount,omitempty"`
+	RecipeTypes   []string `json:"$recipeTypes,omitempty"`
+	Type          string   `json:"$type,omitempty"`
+}
+
+// PositionsCollection represents a collection of position/experience data
+type PositionsCollection struct {
+	Paging      *PagingInfoResponse `json:"paging,omitempty"`
+	Elements    []string            `json:"*elements,omitempty"`
+	RecipeTypes []string            `json:"$recipeTypes,omitempty"`
+	Type        string              `json:"$type,omitempty"`
+}
+
+// EducationCollection represents a collection of education data
+type EducationCollection struct {
+	Paging      *PagingInfoResponse `json:"paging,omitempty"`
+	Elements    []string            `json:"*elements,omitempty"`
+	RecipeTypes []string            `json:"$recipeTypes,omitempty"`
+	Type        string              `json:"$type,omitempty"`
+}
+
+// PositionResponse represents individual position/experience data from API
+type PositionResponse struct {
+	EntityURN              string              `json:"entityUrn,omitempty"`
+	CompanyName            string              `json:"companyName,omitempty"`
+	CompanyURN             string              `json:"*company,omitempty"`
+	Title                  string              `json:"title,omitempty"`
+	Description            string              `json:"description,omitempty"`
+	DateRange              *DateRangeResponse  `json:"dateRange,omitempty"`
+	LocationName           string              `json:"locationName,omitempty"`
+	MultiLocaleCompanyName []map[string]string `json:"multiLocaleCompanyName,omitempty"`
+	RecipeTypes            []string            `json:"$recipeTypes,omitempty"`
+	Type                   string              `json:"$type,omitempty"`
+}
+
+// EducationResponse represents individual education data from API
+type EducationResponse struct {
+	EntityURN    string             `json:"entityUrn,omitempty"`
+	SchoolName   string             `json:"schoolName,omitempty"`
+	SchoolURN    string             `json:"*school,omitempty"`
+	CompanyURN   string             `json:"*company,omitempty"`
+	DegreeName   string             `json:"degreeName,omitempty"`
+	FieldOfStudy string             `json:"fieldOfStudy,omitempty"`
+	DateRange    *DateRangeResponse `json:"dateRange,omitempty"`
+	Description  string             `json:"description,omitempty"`
+	Activities   string             `json:"activities,omitempty"`
+	RecipeTypes  []string           `json:"$recipeTypes,omitempty"`
+	Type         string             `json:"$type,omitempty"`
+}
+
+// DateRangeResponse represents date range data from API response
+type DateRangeResponse struct {
+	Start       *DateResponse `json:"start,omitempty"`
+	End         *DateResponse `json:"end,omitempty"`
+	RecipeTypes []string      `json:"$recipeTypes,omitempty"`
+	Type        string        `json:"$type,omitempty"`
+}
+
+// DateResponse represents date data from API response
+type DateResponse struct {
+	Year        int      `json:"year,omitempty"`
+	Month       int      `json:"month,omitempty"`
+	Day         int      `json:"day,omitempty"`
+	RecipeTypes []string `json:"$recipeTypes,omitempty"`
+	Type        string   `json:"$type,omitempty"`
+}
+
+// VerificationDataResponse represents verification information
+type VerificationDataResponse struct {
+	VerificationState interface{} `json:"verificationState,omitempty"`
+	RecipeTypes       []string    `json:"$recipeTypes,omitempty"`
+	Type              string      `json:"$type,omitempty"`
+}
+
+// CreatorInfoResponse represents creator information
+type CreatorInfoResponse struct {
+	CreatorWebsite        *TextViewModelResponse `json:"creatorWebsite,omitempty"`
+	AssociatedHashtagUrns []string               `json:"associatedHashtagUrns,omitempty"`
+	CreatorPostAnalytics  interface{}            `json:"creatorPostAnalytics,omitempty"`
+	RecipeTypes           []string               `json:"$recipeTypes,omitempty"`
+	Type                  string                 `json:"$type,omitempty"`
+}
+
+// TextViewModelResponse represents text with formatting from API
+type TextViewModelResponse struct {
+	Text              string        `json:"text,omitempty"`
+	TextDirection     string        `json:"textDirection,omitempty"`
+	AttributesV2      []interface{} `json:"attributesV2,omitempty"`
+	AccessibilityText string        `json:"accessibilityText,omitempty"`
+	RecipeTypes       []string      `json:"$recipeTypes,omitempty"`
+	Type              string        `json:"$type,omitempty"`
+}
+
+// --- Search API Response Structures (existing) ---
