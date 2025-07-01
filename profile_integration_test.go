@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"os"
-	"testing"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -269,8 +268,3 @@ var _ = Describe("LinkedIn Profile Integration Tests", func() {
 		})
 	})
 })
-
-func TestProfileIntegration(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "LinkedIn Profile Integration Test Suite")
-}
