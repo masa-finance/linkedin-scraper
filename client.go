@@ -110,9 +110,9 @@ func buildProfileGraphQLURL(baseURL, queryID, publicIdentifier string) (string, 
 		return "", fmt.Errorf("failed to parse base URL: %w", err)
 	}
 
-	// For profile fetching, the variables format is simpler:
-	// variables=(memberIdentity:{publicIdentifier})
-	variablesString := fmt.Sprintf("(memberIdentity:{publicIdentifier:%s})", publicIdentifier)
+	// For profile fetching, the variables format is:
+	// variables=(vanityName:publicIdentifier)
+	variablesString := fmt.Sprintf("(vanityName:%s)", publicIdentifier)
 
 	query := parsedBaseURL.Query()
 	query.Set("queryId", queryID)

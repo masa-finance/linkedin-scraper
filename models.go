@@ -1,5 +1,10 @@
 package linkedinscraper
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 // ProfileSearchArgs represents the arguments for initiating a profile search.
 type ProfileSearchArgs struct {
 	Keywords       string
@@ -167,6 +172,37 @@ type SearchVariables struct {
 
 // --- API Response Structures (to be refined in Step 4 as per your plan) ---
 
+// FlexibleText is a custom type to handle fields that can be either a string or a TextObject
+type FlexibleText string
+
+// UnmarshalJSON implements custom unmarshaling logic for FlexibleText.
+// It tries to unmarshal into a TextObject first, and falls back to a string.
+func (ft *FlexibleText) UnmarshalJSON(data []byte) error {
+	// 1. Try to unmarshal into a standard TextObject
+	var textObj struct {
+		Text string `json:"text"`
+	}
+	if err := json.Unmarshal(data, &textObj); err == nil && textObj.Text != "" {
+		*ft = FlexibleText(textObj.Text)
+		return nil
+	}
+
+	// 2. Try to unmarshal into a simple string
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		*ft = FlexibleText(s)
+		return nil
+	}
+
+	// 3. If it's a JSON null, treat it as an empty string
+	if string(data) == "null" {
+		*ft = ""
+		return nil
+	}
+
+	return fmt.Errorf("cannot unmarshal %s into FlexibleText", string(data))
+}
+
 // TextObject is a common structure in LinkedIn's API for text fields.
 type TextObject struct {
 	Text string `json:"text"`
@@ -195,10 +231,10 @@ type Item struct {
 
 // ClusterElement represents a cluster of search results.
 type ClusterElement struct {
-	Items    []Item      `json:"items"`
-	Position int         `json:"position"`
-	Image    *string     `json:"image"` // Using pointer for nullable
-	Title    *TextObject `json:"title"` // Using pointer for nullable text object
+	Items    []Item        `json:"items"`
+	Position int           `json:"position"`
+	Image    *string       `json:"image"` // Using pointer for nullable
+	Title    *FlexibleText `json:"title"` // Using pointer for nullable text object
 	// Other cluster fields can be added here
 }
 
@@ -222,13 +258,13 @@ type RootData struct {
 // IncludedEntityResultViewModel represents the 'EntityResultViewModel' type found in the "included" array.
 // This is a key structure for populating LinkedInProfile.
 type IncludedEntityResultViewModel struct {
-	EntityURN         string     `json:"entityUrn"`         // This is the URN of the ViewModel itself
-	TrackingURN       string     `json:"trackingUrn"`       // Often the URN of the underlying profile/member
-	Title             TextObject `json:"title"`             // Maps to FullName
-	PrimarySubtitle   TextObject `json:"primarySubtitle"`   // Maps to Headline
-	SecondarySubtitle TextObject `json:"secondarySubtitle"` // Maps to Location
-	NavigationURL     string     `json:"navigationUrl"`     // Maps to ProfileURL
-	BadgeText         TextObject `json:"badgeText"`         // e.g., "• 2nd" for connection degree
+	EntityURN         string       `json:"entityUrn"`         // This is the URN of the ViewModel itself
+	TrackingURN       string       `json:"trackingUrn"`       // Often the URN of the underlying profile/member
+	Title             FlexibleText `json:"title"`             // Maps to FullName
+	PrimarySubtitle   FlexibleText `json:"primarySubtitle"`   // Maps to Headline
+	SecondarySubtitle FlexibleText `json:"secondarySubtitle"` // Maps to Location
+	NavigationURL     string       `json:"navigationUrl"`     // Maps to ProfileURL
+	BadgeText         FlexibleText `json:"badgeText"`         // e.g., "• 2nd" for connection degree
 	// PublicIdentifier might be derived or sometimes present
 }
 
@@ -260,19 +296,38 @@ type GenericIncludedElement struct {
 	// Embed other fields that are common or use json.RawMessage to unmarshal specific data later
 	// For simplicity, we'll assume specific unmarshalling based on $type happens after this stage.
 	// The fields below are from EntityResultViewModel for direct unmarshalling if $type matches.
-	EntityURN         string      `json:"entityUrn,omitempty"`
-	TrackingURN       string      `json:"trackingUrn,omitempty"`
-	Title             *TextObject `json:"title,omitempty"`
-	PrimarySubtitle   *TextObject `json:"primarySubtitle,omitempty"`
-	SecondarySubtitle *TextObject `json:"secondarySubtitle,omitempty"`
-	NavigationURL     string      `json:"navigationUrl,omitempty"`
-	BadgeText         *TextObject `json:"badgeText,omitempty"`
+	EntityURN         string        `json:"entityUrn,omitempty"`
+	TrackingURN       string        `json:"trackingUrn,omitempty"`
+	Title             *FlexibleText `json:"title,omitempty"`
+	PrimarySubtitle   *FlexibleText `json:"primarySubtitle,omitempty"`
+	SecondarySubtitle *FlexibleText `json:"secondarySubtitle,omitempty"`
+	NavigationURL     string        `json:"navigationUrl,omitempty"`
+	BadgeText         *FlexibleText `json:"badgeText,omitempty"`
 
 	// Fields from Profile type
 	PublicIdentifier string `json:"publicIdentifier,omitempty"`
 	FirstName        string `json:"firstName,omitempty"`
 	LastName         string `json:"lastName,omitempty"`
 	Headline         string `json:"headline,omitempty"` // Note: Profile also has a headline
+
+	// Fields from PositionResponse
+	CompanyName  string             `json:"companyName,omitempty"`
+	CompanyURN   string             `json:"*company,omitempty"`
+	Description  string             `json:"description,omitempty"`
+	DateRange    *DateRangeResponse `json:"dateRange,omitempty"`
+	LocationName string             `json:"locationName,omitempty"`
+
+	// Fields from EducationResponse
+	SchoolName   string `json:"schoolName,omitempty"`
+	SchoolURN    string `json:"*school,omitempty"`
+	DegreeName   string `json:"degreeName,omitempty"`
+	FieldOfStudy string `json:"fieldOfStudy,omitempty"`
+	Activities   string `json:"activities,omitempty"`
+
+	// Fields from Skill
+	Name             string `json:"name,omitempty"`
+	EndorsementCount int    `json:"endorsementCount,omitempty"`
+	EndorsedByViewer bool   `json:"endorsedByViewer,omitempty"`
 
 	// Fields from FeedbackCard
 	TrackingId string `json:"trackingId,omitempty"`

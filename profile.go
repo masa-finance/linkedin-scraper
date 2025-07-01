@@ -55,61 +55,92 @@ func parseProfileFromAPIResponse(apiResponse *ProfileAPIResponse, publicIdentifi
 // parseExperienceData extracts experience/position data from the API response.
 func parseExperienceData(apiResponse *ProfileAPIResponse, profileURN string) []Experience {
 	var experiences []Experience
-
 	for _, item := range apiResponse.Included {
 		if item.Type == "com.linkedin.voyager.dash.identity.profile.Position" {
 			experience := Experience{
-				EntityURN:   item.EntityURN,
-				CompanyName: item.PublicIdentifier, // This field may be mapped differently
-				Title:       item.Headline,         // This field may be mapped differently
+				EntityURN:    item.EntityURN,
+				CompanyName:  item.CompanyName,
+				Description:  item.Description,
+				LocationName: item.LocationName,
+				CompanyURN:   item.CompanyURN,
 			}
-
-			// Parse date range if available
-			// Note: The actual API response structure might be different
-			// This is a simplified parsing that would need to be adjusted based on real data
-
+			if item.Title != nil {
+				experience.Title = string(*item.Title)
+			}
+			if item.DateRange != nil {
+				experience.DateRange = &DateRange{}
+				if item.DateRange.Start != nil {
+					experience.DateRange.Start = &Date{
+						Year:  item.DateRange.Start.Year,
+						Month: item.DateRange.Start.Month,
+						Day:   item.DateRange.Start.Day,
+					}
+				}
+				if item.DateRange.End != nil {
+					experience.DateRange.End = &Date{
+						Year:  item.DateRange.End.Year,
+						Month: item.DateRange.End.Month,
+						Day:   item.DateRange.End.Day,
+					}
+				}
+			}
 			experiences = append(experiences, experience)
 		}
 	}
-
 	return experiences
 }
 
 // parseEducationData extracts education data from the API response.
 func parseEducationData(apiResponse *ProfileAPIResponse, profileURN string) []Education {
 	var education []Education
-
 	for _, item := range apiResponse.Included {
 		if item.Type == "com.linkedin.voyager.dash.identity.profile.Education" {
 			edu := Education{
-				EntityURN:  item.EntityURN,
-				SchoolName: item.FirstName, // These field mappings would need adjustment
-				DegreeName: item.LastName,  // based on actual API response structure
+				EntityURN:    item.EntityURN,
+				SchoolName:   item.SchoolName,
+				SchoolURN:    item.SchoolURN,
+				DegreeName:   item.DegreeName,
+				FieldOfStudy: item.FieldOfStudy,
+				Description:  item.Description,
+				Activities:   item.Activities,
 			}
-
+			if item.DateRange != nil {
+				edu.DateRange = &DateRange{}
+				if item.DateRange.Start != nil {
+					edu.DateRange.Start = &Date{
+						Year:  item.DateRange.Start.Year,
+						Month: item.DateRange.Start.Month,
+						Day:   item.DateRange.Start.Day,
+					}
+				}
+				if item.DateRange.End != nil {
+					edu.DateRange.End = &Date{
+						Year:  item.DateRange.End.Year,
+						Month: item.DateRange.End.Month,
+						Day:   item.DateRange.End.Day,
+					}
+				}
+			}
 			education = append(education, edu)
 		}
 	}
-
 	return education
 }
 
 // parseSkillsData extracts skills data from the API response.
 func parseSkillsData(apiResponse *ProfileAPIResponse, profileURN string) []Skill {
 	var skills []Skill
-
 	for _, item := range apiResponse.Included {
-		if item.Type == "com.linkedin.voyager.dash.identity.profile.Skill" ||
-			strings.Contains(item.Type, "Skill") {
+		if strings.Contains(item.Type, "EndorsedSkill") { // The type can vary slightly
 			skill := Skill{
-				EntityURN: item.EntityURN,
-				Name:      item.FirstName, // Field mapping would need adjustment
+				EntityURN:        item.EntityURN,
+				Name:             item.Name,
+				EndorsementCount: item.EndorsementCount,
+				EndorsedByViewer: item.EndorsedByViewer,
 			}
-
 			skills = append(skills, skill)
 		}
 	}
-
 	return skills
 }
 

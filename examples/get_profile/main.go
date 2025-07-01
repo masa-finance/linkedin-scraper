@@ -8,12 +8,20 @@ import (
 	"os"
 	"time"
 
+	"github.com/joho/godotenv"
 	linkedinscraper "github.com/masa-finance/linkedin-scraper"
 )
 
 func main() {
 	fmt.Println("🔍 LinkedIn Profile Scraper - Profile Fetching Example")
 	fmt.Println("====================================================")
+
+	// Load environment variables from .env file if it exists
+	if err := godotenv.Load(); err != nil {
+		log.Printf("ℹ️  No .env file found, using system environment variables")
+	} else {
+		log.Printf("✅ Loaded environment variables from .env file")
+	}
 
 	// Get configuration from environment variables
 	config, err := loadConfigFromEnv()
@@ -100,15 +108,15 @@ func main() {
 
 // loadConfigFromEnv loads configuration from environment variables
 func loadConfigFromEnv() (*linkedinscraper.Config, error) {
-	liAtCookie := os.Getenv("LINKEDIN_LI_AT")
-	csrfToken := os.Getenv("LINKEDIN_CSRF_TOKEN")
-	jsessionid := os.Getenv("LINKEDIN_JSESSIONID")
+	liAtCookie := os.Getenv("LI_AT_COOKIE")
+	csrfToken := os.Getenv("CSRF_TOKEN")
+	jsessionid := os.Getenv("JSESSIONID_TOKEN")
 
 	if liAtCookie == "" || csrfToken == "" {
 		return nil, fmt.Errorf("required environment variables missing. Please set:\n" +
-			"  LINKEDIN_LI_AT=your-li-at-cookie\n" +
-			"  LINKEDIN_CSRF_TOKEN=your-csrf-token\n" +
-			"  LINKEDIN_JSESSIONID=your-jsessionid (optional)")
+			"  LI_AT_COOKIE=your-li-at-cookie\n" +
+			"  CSRF_TOKEN=your-csrf-token\n" +
+			"  JSESSIONID_TOKEN=your-jsessionid (optional)")
 	}
 
 	auth := linkedinscraper.AuthCredentials{
