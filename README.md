@@ -1,6 +1,6 @@
 # linkedin-scraper
 
-A Go package for searching LinkedIn profiles using the Voyager API.
+A Go package for searching LinkedIn profiles and fetching detailed profile data using the Voyager API.
 
 ## Prerequisites
 
@@ -108,9 +108,11 @@ The following example demonstrates how to search for profiles. It expects your L
     	fmt.Println("Searching for profiles with keyword 'software engineer'...")
     	searchArgs := linkedinscraper.ProfileSearchArgs{
     		Keywords:       "software engineer",
-    		NetworkFilters: []string{"S"}, 
-    		Start:          0,            
-    		Count:          5,             
+    		// NetworkFilters is optional. LinkedIn's default is to search all network degrees.
+    		// Valid filters: "F" (1st degree), "S" (2nd degree), "O" (Outside of Your Network).
+    		NetworkFilters: []string{"S"},
+    		Start:          0,
+    		Count:          5,
     	}
 
     	profiles, err := client.SearchProfiles(context.Background(), searchArgs)
@@ -134,6 +136,87 @@ The following example demonstrates how to search for profiles. It expects your L
     ```
 
 This will search for profiles matching "software engineer", attempt to load credentials from `.env` or environment variables, and print the found profiles as JSON.
+
+### Get a Specific Profile
+
+This example shows how to fetch detailed information for a single profile using its public identifier (the part of their profile URL, e.g., `williamhgates` from `https://www.linkedin.com/in/williamhgates/`).
+
+This example can be found in `examples/get_profile/main.go`.
+
+```go
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"os"
+
+	linkedinscraper "github.com/masa-finance/linkedin-scraper"
+	"github.com/joho/godotenv"
+)
+
+func main() {
+	// Load .env file
+	_ = godotenv.Load() 
+
+	fmt.Println("LinkedIn Profile Scraper - Fetch Profile Example")
+
+	// Get credentials from environment
+	liAtCookie := os.Getenv("LI_AT_COOKIE")
+	csrfToken := os.Getenv("CSRF_TOKEN")
+	jsessionID := os.Getenv("JSESSIONID_TOKEN")
+
+	if liAtCookie == "" || csrfToken == "" {
+		log.Fatal("Error: LI_AT_COOKIE and CSRF_TOKEN must be set.")
+	}
+
+	auth := linkedinscraper.AuthCredentials{
+		LiAtCookie: liAtCookie,
+		CSRFToken:  csrfToken,
+		JSESSIONID: jsessionID,
+	}
+
+	cfg, err := linkedinscraper.NewConfig(auth)
+	if err != nil {
+		log.Fatalf("Error creating config: %v", err)
+	}
+
+	client, err := linkedinscraper.NewClient(cfg)
+	if err != nil {
+		log.Fatalf("Error creating client: %v", err)
+	}
+
+	// The public identifier for the profile you want to fetch
+	publicIdentifier := "williamhgates"
+
+	fmt.Printf("Fetching profile for: %s\n", publicIdentifier)
+	profile, err := client.GetProfile(context.Background(), publicIdentifier)
+	if err != nil {
+		log.Fatalf("Error fetching profile: %v", err)
+	}
+
+	fmt.Println("Profile data fetched successfully!")
+	profileJSON, err := json.MarshalIndent(profile, "", "  ")
+	if err != nil {
+		log.Fatalf("Error marshalling profile to JSON: %v", err)
+	}
+	fmt.Println(string(profileJSON))
+}
+```
+
+This will fetch the full profile for Bill Gates and print it as a JSON object.
+
+### Available Profile Data
+
+When using `GetProfile`, the returned `LinkedInProfile` struct is populated with rich data, including:
+-   **Personal Info**: Full Name, Headline, Location, Summary, Profile Picture URL.
+-   **Work Experience**: A list of positions including Company Name, Title, Date Range, and Description.
+-   **Education**: A list of educational institutions attended, including School Name, Degree, and Field of Study.
+-   **Skills**: A list of skills with endorsement counts.
+-   **Connections**: Follower and connection counts.
+-   **And more**: Industry, Certifications, etc.
 
 ## Echo API Example
 

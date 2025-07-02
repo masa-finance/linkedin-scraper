@@ -84,5 +84,31 @@ var _ = Describe("SearchProfiles Integration", func() {
 				// Expect(firstProfile.ProfileURL).NotTo(BeEmpty(), "First profile should have a ProfileURL")
 			}
 		})
+
+		It("should successfully retrieve profiles without a network filter", func() {
+			searchArgs := linkedinscraper.ProfileSearchArgs{
+				Keywords:        "investor",
+				Start:           0,
+				Count:           1,
+				XLiPageInstance: "urn:li:page:d_flagship3_search_srp_people;e+uzo8jcR7GbUNfmjxNoSw==",
+				XLiTrack:        `{"clientVersion":"1.13.35368","mpVersion":"1.13.35368","osName":"web","timezoneOffset":-7,"timezone":"America/Los_Angeles","deviceFormFactor":"DESKTOP","mpName":"voyager-web","displayDensity":2,"displayWidth":5120,"displayHeight":2880}`,
+			}
+
+			profiles, err := client.SearchProfiles(context.Background(), searchArgs)
+
+			By("checking for request errors")
+			Expect(err).NotTo(HaveOccurred())
+
+			By("checking if profiles slice is populated")
+			Expect(profiles).NotTo(BeEmpty(), "Expected to find at least one investor profile")
+
+			By("inspecting the first profile's basic details")
+			if len(profiles) > 0 {
+				firstProfile := profiles[0]
+				Expect(firstProfile.FullName).NotTo(BeEmpty(), "First profile should have a FullName")
+				Expect(firstProfile.URN).NotTo(BeEmpty(), "First profile should have a URN")
+				Expect(firstProfile.Headline).NotTo(BeEmpty(), "First profile should have a Headline")
+			}
+		})
 	})
 })

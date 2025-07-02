@@ -148,9 +148,9 @@ func (c *Client) SearchProfiles(ctx context.Context, args ProfileSearchArgs) ([]
 
 			profile := LinkedInProfile{
 				URN:        item.TrackingURN, // TrackingURN from EntityResultViewModel is often the profile URN
-				FullName:   item.Title.Text,
-				Headline:   item.PrimarySubtitle.Text,
-				Location:   item.SecondarySubtitle.Text,
+				FullName:   string(*item.Title),
+				Headline:   string(*item.PrimarySubtitle),
+				Location:   string(*item.SecondarySubtitle),
 				ProfileURL: item.NavigationURL,
 				// PublicIdentifier can come from EntityResultViewModel itself or be enriched
 			}

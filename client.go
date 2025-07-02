@@ -3,6 +3,7 @@ package linkedinscraper
 import (
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -99,6 +100,100 @@ func buildGraphQLURL(baseURL, queryID string, variables SearchVariables) (string
 // Helper function for constructing parts of the variables string.
 func stringSliceToString(slice []string, sep string) string {
 	return strings.Join(slice, sep)
+}
+
+// buildProfileGraphQLURL constructs the full URL for a profile GraphQL API request.
+// It takes the base URL, query ID, and publicIdentifier, then assembles them.
+func buildProfileGraphQLURL(baseURL, queryID, publicIdentifier string) (string, error) {
+	parsedBaseURL, err := url.Parse(baseURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse base URL: %w", err)
+	}
+
+	// For profile fetching, the variables format is:
+	// variables=(vanityName:publicIdentifier)
+	variablesString := fmt.Sprintf("(vanityName:%s)", publicIdentifier)
+
+	query := parsedBaseURL.Query()
+	query.Set("queryId", queryID)
+	query.Set("includeWebMetadata", "true")
+
+	// Encode the base query parameters
+	encodedBaseQuery := query.Encode()
+
+	// Append the variables part with literal parentheses
+	finalQueryString := encodedBaseQuery + "&variables=" + variablesString
+	parsedBaseURL.RawQuery = finalQueryString
+
+	return parsedBaseURL.String(), nil
+}
+
+// GetProfile fetches a detailed LinkedIn profile by public identifier.
+func (c *Client) GetProfile(ctx context.Context, publicIdentifier string) (*LinkedInProfile, error) {
+	// Input Validation
+	if c.config.Auth.LiAtCookie == "" || c.config.Auth.CSRFToken == "" {
+		return nil, ErrAuthMissing
+	}
+	if publicIdentifier == "" {
+		return nil, fmt.Errorf("publicIdentifier cannot be empty")
+	}
+
+	// Build URL
+	requestURL, err := buildProfileGraphQLURL(VoyagerBaseURL, DefaultProfileQueryID, publicIdentifier)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrRequestBuildFailed, err)
+	}
+
+	// Prepare Headers
+	customHeaders := http.Header{}
+	customHeaders.Set("Accept", AcceptHeaderValue)
+
+	// Construct Referer URL for profile requests
+	refererURL := fmt.Sprintf("https://www.linkedin.com/in/%s/", publicIdentifier)
+	customHeaders.Set("Referer", refererURL)
+
+	// Set X-Li-Page-Instance for profile pages
+	xLiPageInstance := fmt.Sprintf("urn:li:page:d_flagship3_profile_view_base;%s", publicIdentifier)
+	customHeaders.Set("X-Li-Page-Instance", xLiPageInstance)
+
+	customHeaders.Set("X-Li-Pem-Metadata", "Voyager - Profile")
+
+	// Set X-Li-Track with appropriate context for profile viewing
+	xLiTrack := `{"clientVersion":"1.13.35368","mpVersion":"1.13.35368","osName":"web","timezoneOffset":-7,"timezone":"America/Los_Angeles","deviceFormFactor":"DESKTOP","mpName":"voyager-web","displayDensity":2,"displayWidth":1920,"displayHeight":1080}`
+	customHeaders.Set("X-Li-Track", xLiTrack)
+
+	// Make API Call
+	resp, respBodyBytes, err := c.makeRequest(ctx, http.MethodGet, requestURL, customHeaders, nil)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrRequestFailed, err)
+	}
+
+	// Error Handling (HTTP Status)
+	if resp.StatusCode != http.StatusOK {
+		switch resp.StatusCode {
+		case http.StatusUnauthorized, http.StatusForbidden:
+			return nil, fmt.Errorf("%w: status %d, body: %s", ErrUnauthorized, resp.StatusCode, string(respBodyBytes))
+		case http.StatusTooManyRequests:
+			return nil, fmt.Errorf("%w: status %d, body: %s", ErrRateLimited, resp.StatusCode, string(respBodyBytes))
+		default:
+			return nil, fmt.Errorf("%w: received status code %d, body: %s", ErrRequestFailed, resp.StatusCode, string(respBodyBytes))
+		}
+	}
+
+	// Parse JSON Response
+	var apiResponse ProfileAPIResponse
+	err = json.Unmarshal(respBodyBytes, &apiResponse)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v. Raw response: %s", ErrResponseParseFailed, err, string(respBodyBytes))
+	}
+
+	// Extract Profile from Response using comprehensive parsing
+	profile, err := convertAPIResponseToLinkedInProfile(&apiResponse, publicIdentifier)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract profile from response: %w", err)
+	}
+
+	return profile, nil
 }
 
 // makeRequest executes an HTTP request and returns the response and body bytes.

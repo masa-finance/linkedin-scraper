@@ -8,6 +8,10 @@ const (
 	// Updated based on the latest working cURL command provided by the user.
 	DefaultSearchQueryID = "voyagerSearchDashClusters.7cdf88d3366ad02cc5a3862fb9a24085"
 
+	// DefaultProfileQueryID is the default query ID for profile fetching.
+	// This is used with the voyagerIdentityDashProfiles query to fetch detailed profile data.
+	DefaultProfileQueryID = "voyagerIdentityDashProfiles.8ca6ef03f32147a4d49324ed99a3d978"
+
 	AcceptHeaderValue            = "application/vnd.linkedin.normalized+json+2.1"
 	AcceptEncodingHeaderValue    = "gzip, deflate, br, zstd"
 	AcceptLanguageHeaderValue    = "en-GB,en-US;q=0.9,en;q=0.8"
