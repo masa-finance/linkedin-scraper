@@ -142,6 +142,15 @@ type LinkedInProfile struct {
 	// Degree string `json:"degree,omitempty"` // e.g. "• 2nd", could be parsed from badgeText
 }
 
+const (
+	EntityTypeProfile       = "com.linkedin.voyager.dash.identity.profile.Profile"
+	EntityTypePosition      = "com.linkedin.voyager.dash.identity.profile.Position"
+	EntityTypeEducation     = "com.linkedin.voyager.dash.identity.profile.Education"
+	EntityTypeEndorsedSkill = "EndorsedSkill"
+	EntityTypeConnection    = "Connection"
+	EntityTypeFollowing     = "Following"
+)
+
 // SearchQueryParameters represents a single key-value pair for query parameters
 // within the search query.
 type SearchQueryParameters struct {

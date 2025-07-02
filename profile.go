@@ -12,7 +12,7 @@ func parseProfileFromAPIResponse(apiResponse *ProfileAPIResponse, publicIdentifi
 	var profileEntity *GenericIncludedElement
 
 	for i, item := range apiResponse.Included {
-		if item.Type == "com.linkedin.voyager.dash.identity.profile.Profile" &&
+		if item.Type == EntityTypeProfile &&
 			item.PublicIdentifier == publicIdentifier {
 			profileEntity = &apiResponse.Included[i]
 			break
@@ -56,7 +56,7 @@ func parseProfileFromAPIResponse(apiResponse *ProfileAPIResponse, publicIdentifi
 func parseExperienceData(apiResponse *ProfileAPIResponse, profileURN string) []Experience {
 	var experiences []Experience
 	for _, item := range apiResponse.Included {
-		if item.Type == "com.linkedin.voyager.dash.identity.profile.Position" {
+		if item.Type == EntityTypePosition {
 			experience := Experience{
 				EntityURN:    item.EntityURN,
 				CompanyName:  item.CompanyName,
@@ -94,7 +94,7 @@ func parseExperienceData(apiResponse *ProfileAPIResponse, profileURN string) []E
 func parseEducationData(apiResponse *ProfileAPIResponse, profileURN string) []Education {
 	var education []Education
 	for _, item := range apiResponse.Included {
-		if item.Type == "com.linkedin.voyager.dash.identity.profile.Education" {
+		if item.Type == EntityTypeEducation {
 			edu := Education{
 				EntityURN:    item.EntityURN,
 				SchoolName:   item.SchoolName,
@@ -131,7 +131,7 @@ func parseEducationData(apiResponse *ProfileAPIResponse, profileURN string) []Ed
 func parseSkillsData(apiResponse *ProfileAPIResponse, profileURN string) []Skill {
 	var skills []Skill
 	for _, item := range apiResponse.Included {
-		if strings.Contains(item.Type, "EndorsedSkill") { // The type can vary slightly
+		if strings.Contains(item.Type, EntityTypeEndorsedSkill) { // The type can vary slightly
 			skill := Skill{
 				EntityURN:        item.EntityURN,
 				Name:             item.Name,
@@ -148,7 +148,7 @@ func parseSkillsData(apiResponse *ProfileAPIResponse, profileURN string) []Skill
 func parseLocationData(apiResponse *ProfileAPIResponse, profileURN string) *ProfileLocation {
 	// Look for location data in the main profile entity or related entities
 	for _, item := range apiResponse.Included {
-		if item.Type == "com.linkedin.voyager.dash.identity.profile.Profile" &&
+		if item.Type == EntityTypeProfile &&
 			item.EntityURN == profileURN {
 			// Parse location from the profile entity
 			// This would need to be adjusted based on actual API structure
@@ -166,14 +166,14 @@ func parseConnectionData(apiResponse *ProfileAPIResponse, profileURN string) *Co
 	connectionInfo := &ConnectionInfo{}
 
 	for _, item := range apiResponse.Included {
-		if strings.Contains(item.Type, "Connection") {
+		if strings.Contains(item.Type, EntityTypeConnection) {
 			// Parse connection count from the item
 			// This would need adjustment based on actual API structure
 			if count, err := parseConnectionCount(item); err == nil {
 				connectionInfo.ConnectionCount = count
 			}
 		}
-		if strings.Contains(item.Type, "Following") {
+		if strings.Contains(item.Type, EntityTypeFollowing) {
 			// Parse follower/following information
 			// This would need adjustment based on actual API structure
 			if count, err := parseFollowerCount(item); err == nil {
@@ -188,7 +188,7 @@ func parseConnectionData(apiResponse *ProfileAPIResponse, profileURN string) *Co
 // parseProfilePictureData extracts profile picture information.
 func parseProfilePictureData(apiResponse *ProfileAPIResponse, profileURN string) *ProfilePicture {
 	for _, item := range apiResponse.Included {
-		if item.Type == "com.linkedin.voyager.dash.identity.profile.Profile" &&
+		if item.Type == EntityTypeProfile &&
 			item.EntityURN == profileURN {
 			return &ProfilePicture{
 				DisplayImageUrn: extractProfileImageURN(item),
@@ -325,7 +325,7 @@ func ParseFromJSON(jsonData []byte) (*LinkedInProfile, error) {
 // extractPublicIdentifierFromResponse extracts the public identifier from the API response.
 func extractPublicIdentifierFromResponse(apiResponse *ProfileAPIResponse) string {
 	for _, item := range apiResponse.Included {
-		if item.Type == "com.linkedin.voyager.dash.identity.profile.Profile" &&
+		if item.Type == EntityTypeProfile &&
 			item.PublicIdentifier != "" {
 			return item.PublicIdentifier
 		}
