@@ -34,9 +34,7 @@ func parseProfileFromAPIResponse(apiResponse *ProfileAPIResponse, publicIdentifi
 	}
 
 	// Set FullName
-	if profile.FirstName != "" && profile.LastName != "" {
-		profile.FullName = profile.FirstName + " " + profile.LastName
-	}
+	profile.FullName = strings.TrimSpace(profile.FirstName + " " + profile.LastName)
 
 	// Parse additional profile data by finding and processing related entities
 	profile.Experience = parseExperienceData(apiResponse, profileEntity.EntityURN)
